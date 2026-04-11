@@ -1,0 +1,5 @@
+{
+  "name": "Sentivoice",
+  "description": "AI-powered emotion detection through voice analysis and sentiment feedback.",
+  "requestFramePermissions": ["microphone"]
+}
