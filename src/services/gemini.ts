@@ -1,43 +1,56 @@
-from fastapi import FastAPI, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
-from transformers import pipeline
-import os
+import { GoogleGenAI } from "@google/genai";
 
-app = FastAPI()
+export interface EmotionAnalysis {
+  emotion: string;
+  sentiment: "positive" | "negative" | "neutral";
+  intensity: number;
+  transcription: string;
+  feedback: string;
+}
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+export async function analyzeVoiceEmotion(
+  base64data: string,
+  mimeType: string
+): Promise<EmotionAnalysis> {
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  if (!apiKey) throw new Error("Missing VITE_GEMINI_API_KEY in .env");
 
-classifier = pipeline(
-    "audio-classification",
-    model="superb/wav2vec2-base-superb-er"
-)
+  const ai = new GoogleGenAI({ apiKey });
 
-@app.post("/analyze")
-async def analyze(file: UploadFile):
-    contents = await file.read()
+  const prompt = `You are an emotion analysis AI. Listen to this audio and respond ONLY with a valid JSON object — no markdown, no explanation, just raw JSON.
 
-    with open("temp.mp3", "wb") as f:
-        f.write(contents)
+{
+  "emotion": "one of: Happy, Sad, Angry, Fearful, Disgusted, Surprised, Neutral",
+  "sentiment": "one of: positive, negative, neutral",
+  "intensity": <number from 1 to 10>,
+  "transcription": "<what the person said, or 'No speech detected'>",
+  "feedback": "<one sentence of empathetic feedback based on the emotion>"
+}`;
 
-    tmp_path = os.path.abspath("temp.mp3")
-    result = classifier(tmp_path)
+  const response = await ai.models.generateContent({
+    model: "gemini-2.0-flash",
+    contents: [
+      {
+        role: "user",
+        parts: [
+          {
+            inlineData: {
+              mimeType: mimeType as "audio/webm",
+              data: base64data,
+            },
+          },
+          { text: prompt },
+        ],
+      },
+    ],
+  });
 
-    labels = {
-        "hap": "Happy",
-        "sad": "Sad",
-        "ang": "Angry",
-        "neu": "Neutral"
-    }
+  const text = response.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  const clean = text.replace(/```json|```/g, "").trim();
 
-    top = max(result, key=lambda x: x["score"])
-
-    return {
-        "emotion": labels.get(top["label"], top["label"]),
-        "confidence": round(top["score"], 2)
-    }
+  try {
+    return JSON.parse(clean) as EmotionAnalysis;
+  } catch {
+    throw new Error("Gemini returned invalid JSON: " + text);
+  }
+}
