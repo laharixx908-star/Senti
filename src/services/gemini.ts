@@ -1,5 +1,3 @@
-import { GoogleGenAI } from "@google/genai";
-
 export interface EmotionAnalysis {
   emotion: string;
   sentiment: "positive" | "negative" | "neutral";
@@ -8,49 +6,53 @@ export interface EmotionAnalysis {
   feedback: string;
 }
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+const sentimentMap: Record<string, "positive" | "negative" | "neutral"> = {
+  Happy: "positive",
+  Sad: "negative",
+  Angry: "negative",
+  Fearful: "negative",
+  Neutral: "neutral",
+};
+
+const feedbackMap: Record<string, string> = {
+  Happy: "You sound great — keep that energy up!",
+  Sad: "It's okay to feel down. Take it one step at a time.",
+  Angry: "Take a deep breath. Things will get better.",
+  Fearful: "It's okay to feel nervous. You've got this.",
+  Neutral: "You sound calm and composed.",
+};
+
 export async function analyzeVoiceEmotion(
   base64data: string,
   mimeType: string
 ): Promise<EmotionAnalysis> {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  if (!apiKey) throw new Error("Missing VITE_GEMINI_API_KEY in .env");
+  const byteString = atob(base64data);
+  const byteArray = new Uint8Array(byteString.length);
+  for (let i = 0; i < byteString.length; i++) {
+    byteArray[i] = byteString.charCodeAt(i);
+  }
+  const audioBlob = new Blob([byteArray], { type: mimeType });
 
-  const ai = new GoogleGenAI({ apiKey });
+  const formData = new FormData();
+  formData.append("file", audioBlob, "recording.webm");
 
-  const prompt = `You are an emotion analysis AI. Listen to this audio and respond ONLY with a valid JSON object — no markdown, no explanation, just raw JSON.
-
-{
-  "emotion": "one of: Happy, Sad, Angry, Fearful, Disgusted, Surprised, Neutral",
-  "sentiment": "one of: positive, negative, neutral",
-  "intensity": <number from 1 to 10>,
-  "transcription": "<what the person said, or 'No speech detected'>",
-  "feedback": "<one sentence of empathetic feedback based on the emotion>"
-}`;
-
-  const response = await ai.models.generateContent({
-    model: "gemini-1.5-flash",
-    contents: [
-      {
-        role: "user",
-        parts: [
-          {
-            inlineData: {
-              mimeType: mimeType as "audio/webm",
-              data: base64data,
-            },
-          },
-          { text: prompt },
-        ],
-      },
-    ],
+  const res = await fetch(`${BACKEND_URL}/analyze`, {
+    method: "POST",
+    body: formData,
   });
 
-  const text = response.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-  const clean = text.replace(/```json|```/g, "").trim();
+  if (!res.ok) throw new Error(`Backend error: ${res.status}`);
 
-  try {
-    return JSON.parse(clean) as EmotionAnalysis;
-  } catch {
-    throw new Error("Gemini returned invalid JSON: " + text);
-  }
+  const data = await res.json();
+  const emotion: string = data.emotion ?? "Neutral";
+
+  return {
+    emotion,
+    sentiment: sentimentMap[emotion] ?? "neutral",
+    intensity: Math.round((data.confidence ?? 0.5) * 10),
+    transcription: "No speech detected",
+    feedback: feedbackMap[emotion] ?? "Analysis complete.",
+  };
 }
