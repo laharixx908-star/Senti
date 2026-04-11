@@ -1,33 +1,54 @@
 from fastapi import FastAPI, UploadFile, File
-import torch
-import librosa
-import numpy as np
-from transformers import Wav2Vec2Processor, Wav2Vec2ForSequenceClassification
+from fastapi.middleware.cors import CORSMiddleware
+from transformers import pipeline
+import tempfile
+import os
+
+os.environ["PATH"] += os.pathsep + r"C:\Users\lucky\OneDrive\Documents\Study\Coding\ffmpeg-8.1-essentials_build\ffmpeg-8.1-essentials_build\bin"
 
 app = FastAPI()
 
-model_name = "superb/wav2vec2-base-superb-er"
-processor = Wav2Vec2Processor.from_pretrained(model_name)
-model = Wav2Vec2ForSequenceClassification.from_pretrained(model_name)
+# CORS fix
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-labels = ["neutral", "happy", "sad", "angry"]
+# Load model
+classifier = pipeline(
+    "audio-classification",
+    model="superb/wav2vec2-base-superb-er"
+)
+
+from fastapi import FastAPI, UploadFile
+import os
+
+app = FastAPI()
 
 @app.post("/analyze")
-async def analyze(file: UploadFile = File(...)):
-    audio_bytes = await file.read()
+async def analyze(file: UploadFile):
+    contents = await file.read()
 
-    # load audio
-    y, sr = librosa.load(file.file, sr=16000)
+    with open("temp.mp3", "wb") as f:
+        f.write(contents)
 
-    inputs = processor(y, sampling_rate=16000, return_tensors="pt", padding=True)
+    tmp_path = os.path.abspath("temp.mp3")
 
-    with torch.no_grad():
-        logits = model(**inputs).logits
+    result = classifier(tmp_path)
 
-    predicted_id = torch.argmax(logits, dim=-1).item()
-    confidence = torch.softmax(logits, dim=-1)[0][predicted_id].item()
+    labels = {
+        "hap": "Happy",
+        "sad": "Sad",
+        "ang": "Angry",
+        "neu": "Neutral"
+    }
+
+    top = max(result, key=lambda x: x["score"])
 
     return {
-        "emotion": labels[predicted_id],
-        "confidence": round(confidence * 100, 2)
+        "emotion": labels[top["label"]],
+        "confidence": round(top["score"], 2)
     }
