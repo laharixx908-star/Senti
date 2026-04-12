@@ -6,3 +6,4 @@ onnxruntime
 joblib
 soundfile
 python-multipart
+gdown
