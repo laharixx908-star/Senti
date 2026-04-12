@@ -2,6 +2,7 @@ fastapi
 uvicorn
 numpy
 librosa
+onnxruntime
 joblib
 soundfile
 python-multipart
