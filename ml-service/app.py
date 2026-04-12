@@ -7,6 +7,7 @@ import io
 import os
 import soundfile as sf
 import onnxruntime as rt
+import gdown
 
 app = FastAPI()
 
@@ -19,8 +20,18 @@ app.add_middleware(
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-model = rt.InferenceSession(os.path.join(BASE_DIR, "emotion_model.onnx"))
-le = joblib.load(os.path.join(BASE_DIR, "label_encoder.pkl"))
+MODEL_PATH = os.path.join(BASE_DIR, "emotion_model.onnx")
+LE_PATH = os.path.join(BASE_DIR, "label_encoder.pkl")
+
+# Download from Google Drive if not present
+if not os.path.exists(MODEL_PATH):
+    gdown.download(f"https://drive.google.com/uc?id=1dU2hW-ym402VFkhJ-_Dz2l49llE5-6Un", MODEL_PATH, quiet=False)
+
+if not os.path.exists(LE_PATH):
+    gdown.download(f"https://drive.google.com/uc?id=13BcuF5SEdXAIdML7DMMGm0pRWPaD5iGd", LE_PATH, quiet=False)
+
+model = rt.InferenceSession(MODEL_PATH)
+le = joblib.load(LE_PATH)
 
 def extract_features(audio_array, sr):
     audio = np.array(audio_array, dtype=np.float32)
@@ -40,6 +51,4 @@ async def analyze(file: UploadFile):
     contents = await file.read()
     audio_array, sr = sf.read(io.BytesIO(contents))
     features = extract_features(audio_array, sr).reshape(1, -1).astype(np.float32)
-    pred = model.run(None, {"float_input": features})[0]
-    emotion = le.inverse_transform(pred)[0]
-    return {"emotion": emotion, "confidence": 0.9}
+    pred = model.run(
