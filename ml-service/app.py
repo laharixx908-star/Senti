@@ -16,8 +16,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-model = joblib.load("emotion_model.pkl")
-le = joblib.load("label_encoder.pkl")
+import onnxruntime as rt
+
+model = rt.InferenceSession("emotion_model.onnx")
 
 def extract_features(audio_array, sr):
     audio = np.array(audio_array, dtype=np.float32)
