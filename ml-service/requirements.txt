@@ -1,7 +1,4 @@
 fastapi
 uvicorn
-transformers
-torch
-torchaudio
-librosa
 python-multipart
+requests
