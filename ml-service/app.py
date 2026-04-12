@@ -29,18 +29,20 @@ async def analyze(file: UploadFile):
     contents = await file.read()
     headers = {"Authorization": f"Bearer {HF_TOKEN}"} if HF_TOKEN else {}
 
-    # Retry up to 3 times (model may be loading)
+    print(f"Audio size: {len(contents)} bytes, type: {file.content_type}")
+
     for attempt in range(3):
         response = requests.post(API_URL, headers=headers, data=contents)
-        
+        print(f"HF status: {response.status_code}, response: {response.text[:300]}")
+
         if response.status_code == 200 and response.text.strip():
             result = response.json()
             if isinstance(result, list) and len(result) > 0:
                 top = max(result, key=lambda x: x["score"])
                 emotion = labels.get(top["label"], top["label"])
+                print(f"Detected: {emotion}")
                 return {"emotion": emotion, "confidence": round(top["score"], 2)}
-        
-        # Model loading - wait and retry
+
         time.sleep(3)
 
     return {"emotion": "Neutral", "confidence": 0.5}
