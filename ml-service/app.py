@@ -1,8 +1,10 @@
 from fastapi import FastAPI, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-import requests
-import os
-import time
+import numpy as np
+import librosa
+import joblib
+import io
+import soundfile as sf
 
 app = FastAPI()
 
@@ -14,35 +16,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-HF_TOKEN = os.environ.get("HF_TOKEN", "")
-API_URL = "https://api-inference.huggingface.co/models/ehcalabres/wav2vec2-lg-xlsr-en-speech-emotion-recognition"
+model = joblib.load("emotion_model.pkl")
+le = joblib.load("label_encoder.pkl")
 
-labels = {
-    "hap": "Happy",
-    "sad": "Sad",
-    "ang": "Angry",
-    "neu": "Neutral"
-}
+def extract_features(audio_array, sr):
+    audio = np.array(audio_array, dtype=np.float32)
+    if len(audio.shape) > 1:
+        audio = audio.mean(axis=0)
+    mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=40)
+    chroma = librosa.feature.chroma_stft(y=audio, sr=sr)
+    mel = librosa.feature.melspectrogram(y=audio, sr=sr)
+    return np.hstack([
+        np.mean(mfcc, axis=1),
+        np.mean(chroma, axis=1),
+        np.mean(mel, axis=1)
+    ])
 
 @app.post("/analyze")
 async def analyze(file: UploadFile):
     contents = await file.read()
-    headers = {"Authorization": f"Bearer {HF_TOKEN}"} if HF_TOKEN else {}
-
-    print(f"Audio size: {len(contents)} bytes, type: {file.content_type}")
-
-    for attempt in range(3):
-        response = requests.post(API_URL, headers=headers, data=contents)
-        print(f"HF status: {response.status_code}, response: {response.text[:300]}")
-
-        if response.status_code == 200 and response.text.strip():
-            result = response.json()
-            if isinstance(result, list) and len(result) > 0:
-                top = max(result, key=lambda x: x["score"])
-                emotion = labels.get(top["label"], top["label"])
-                print(f"Detected: {emotion}")
-                return {"emotion": emotion, "confidence": round(top["score"], 2)}
-
-        time.sleep(3)
-
-    return {"emotion": "Neutral", "confidence": 0.5}
+    audio_array, sr = sf.read(io.BytesIO(contents))
+    features = extract_features(audio_array, sr)
+    features = features.reshape(1, -1)
+    prediction = model.predict(features)[0]
+    confidence = max(model.predict_proba(features)[0])
+    emotion = le.inverse_transform([prediction])[0]
+    return {"emotion": emotion, "confidence": round(float(confidence), 2)}
