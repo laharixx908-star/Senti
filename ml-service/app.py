@@ -23,12 +23,23 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "emotion_model.onnx")
 LE_PATH = os.path.join(BASE_DIR, "label_encoder.pkl")
 
-# ✅ Robust download + validation
-def download_file(url, path, min_size=1000000):  # 1MB default
+# ✅ Robust download using FILE ID (NO fuzzy, NO URL issues)
+def download_file(file_id, path, min_size=1000000):
+    print(f"Checking {path}...")
+
+    # delete corrupted file if exists
+    if os.path.exists(path):
+        size = os.path.getsize(path)
+        if size < min_size:
+            print(f"Removing corrupted file: {path}")
+            os.remove(path)
+
+    # download if missing
     if not os.path.exists(path):
         print(f"Downloading {path}...")
-        gdown.download(url, path, quiet=False, fuzzy=True)
+        gdown.download(id=file_id, output=path, quiet=False)
 
+    # validate
     if not os.path.exists(path):
         raise Exception(f"{path} was not downloaded")
 
@@ -37,24 +48,21 @@ def download_file(url, path, min_size=1000000):  # 1MB default
 
     if size < min_size:
         raise Exception(f"{path} is corrupted or too small")
-# ✅ DELETE old corrupted model (ADD THIS)
-if os.path.exists(MODEL_PATH):
-    print("Removing old model file...")
-    os.remove(MODEL_PATH)
 
-# ✅ Download files safely
+
+# ✅ Download model & encoder
 download_file(
-    "https://drive.google.com/uc?id=1dU2hW-ym402VFkhJ-_Dz2l49llE5-6Un",
+    "1dU2hW-ym402VFkhJ-_Dz2l49llE5-6Un",  # model file ID
     MODEL_PATH
 )
 
 download_file(
-    "https://drive.google.com/uc?id=13BcuF5SEdXAIdML7DMMGm0pRWPaD5iGd",
+    "13BcuF5SEdXAIdML7DMMGm0pRWPaD5iGd",  # label encoder ID
     LE_PATH,
-    min_size=1000  # smaller file
+    min_size=1000
 )
 
-# ✅ Safe model loading
+# ✅ Load model safely
 try:
     print("Loading ONNX model...")
     model = rt.InferenceSession(MODEL_PATH)
@@ -97,7 +105,7 @@ async def analyze(file: UploadFile):
 
     features = extract_features(audio_array, sr).reshape(1, -1).astype(np.float32)
 
-    # ⚠️ Ensure input name matches your ONNX model
+    # ✅ dynamic input name (prevents ONNX mismatch errors)
     input_name = model.get_inputs()[0].name
     pred = model.run(None, {input_name: features})[0]
 
