@@ -14,7 +14,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://sentivoice.vercel.app"
+        "https://sentivoice.vercel.app",  # your frontend
     ],
     allow_credentials=True,
     allow_methods=["*"],
