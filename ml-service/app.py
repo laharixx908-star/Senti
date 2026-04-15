@@ -56,11 +56,14 @@ download_file(
     MODEL_PATH
 )
 
-download_file(
-    "13BcuF5SEdXAIdML7DMMGm0pRWPaD5iGd",  # label encoder ID
-    LE_PATH,
-    min_size=1000
-)
+if not os.path.exists(LE_PATH):
+    download_file(
+        "13BcuF5SEdXAIdML7DMMGm0pRWPaD5iGd",
+        LE_PATH,
+        min_size=1000
+    )
+else:
+    print("Label encoder already exists, skipping download ✅")
 
 # ✅ Load model safely
 try:
