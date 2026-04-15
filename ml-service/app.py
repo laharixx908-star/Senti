@@ -27,7 +27,7 @@ LE_PATH = os.path.join(BASE_DIR, "label_encoder.pkl")
 def download_file(url, path, min_size=1000000):  # 1MB default
     if not os.path.exists(path):
         print(f"Downloading {path}...")
-        gdown.download(url, path, quiet=False)
+        gdown.download(url, path, quiet=False, fuzzy=True)
 
     if not os.path.exists(path):
         raise Exception(f"{path} was not downloaded")
@@ -37,6 +37,10 @@ def download_file(url, path, min_size=1000000):  # 1MB default
 
     if size < min_size:
         raise Exception(f"{path} is corrupted or too small")
+# ✅ DELETE old corrupted model (ADD THIS)
+if os.path.exists(MODEL_PATH):
+    print("Removing old model file...")
+    os.remove(MODEL_PATH)
 
 # ✅ Download files safely
 download_file(
