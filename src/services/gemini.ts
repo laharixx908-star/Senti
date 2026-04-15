@@ -28,19 +28,25 @@ export async function analyzeVoiceEmotion(
   base64data: string,
   mimeType: string
 ): Promise<EmotionAnalysis> {
+
   const byteString = atob(base64data);
   const byteArray = new Uint8Array(byteString.length);
+
   for (let i = 0; i < byteString.length; i++) {
     byteArray[i] = byteString.charCodeAt(i);
   }
+
   const audioBlob = new Blob([byteArray], { type: mimeType });
 
   const formData = new FormData();
-  formData.append("file", audioBlob, "recording.webm");
+
+  // ✅ IMPORTANT FIX: change filename
+  formData.append("file", audioBlob, "audio.wav");
 
   const res = await fetch(`${BACKEND_URL}/analyze`, {
     method: "POST",
     body: formData,
+    mode: "cors"
   });
 
   if (!res.ok) throw new Error(`Backend error: ${res.status}`);
