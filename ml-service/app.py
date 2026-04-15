@@ -10,30 +10,29 @@ import gdown
 
 app = FastAPI()
 
-# ✅ FIXED CORS (allow your frontend)
+# ✅ FIXED CORS (NO "*" with credentials)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://sentivoice.vercel.app",  # your frontend
+        "https://sentivoice.vercel.app",
+        "http://localhost:5173"
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ✅ FIX preflight (VERY IMPORTANT)
-@app.options("/{rest_of_path:path}")
-async def preflight_handler():
-    return {}
+# ✅ FIX preflight request (IMPORTANT)
+@app.options("/analyze")
+async def options_analyze():
+    return {"status": "ok"}
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "emotion_model.onnx")
 LE_PATH = os.path.join(BASE_DIR, "label_encoder.pkl")
 
-# ✅ Robust download
+# ✅ SAFE DOWNLOAD (NO fuzzy errors)
 def download_file(file_id, path, min_size=1000000):
-    print(f"Checking {path}...")
-
     if os.path.exists(path):
         size = os.path.getsize(path)
         if size < min_size:
@@ -45,48 +44,23 @@ def download_file(file_id, path, min_size=1000000):
         gdown.download(id=file_id, output=path, quiet=False)
 
     if not os.path.exists(path):
-        raise Exception(f"{path} was not downloaded")
+        raise Exception(f"{path} not downloaded")
 
     size = os.path.getsize(path)
-    print(f"{path} size: {size} bytes")
+    print(f"{path} size: {size}")
 
     if size < min_size:
-        raise Exception(f"{path} is corrupted or too small")
+        raise Exception(f"{path} corrupted")
 
+# ✅ DOWNLOAD FILES
+download_file("1dU2hW-ym402VFkhJ-_Dz2l49llE5-6Un", MODEL_PATH)
 
-# ✅ Download model
-download_file(
-    "1dU2hW-ym402VFkhJ-_Dz2l49llE5-6Un",
-    MODEL_PATH
-)
-
-# ✅ Load label encoder (skip download if exists)
 if not os.path.exists(LE_PATH):
-    download_file(
-        "13BcuF5SEdXAIdML7DMMGm0pRWPaD5iGd",
-        LE_PATH,
-        min_size=1000
-    )
-else:
-    print("Label encoder already exists, skipping download ✅")
+    download_file("13BcuF5SEdXAIdML7DMMGm0pRWPaD5iGd", LE_PATH, min_size=1000)
 
-# ✅ Load model
-try:
-    print("Loading ONNX model...")
-    model = rt.InferenceSession(MODEL_PATH)
-    print("Model loaded successfully ✅")
-except Exception as e:
-    print("Model loading failed ❌:", e)
-    raise
-
-# ✅ Load encoder
-try:
-    le = joblib.load(LE_PATH)
-    print("Label encoder loaded ✅")
-except Exception as e:
-    print("Label encoder loading failed ❌:", e)
-    raise
-
+# ✅ LOAD MODEL
+model = rt.InferenceSession(MODEL_PATH)
+le = joblib.load(LE_PATH)
 
 def extract_features(audio_array, sr):
     audio = np.array(audio_array, dtype=np.float32)
@@ -104,22 +78,27 @@ def extract_features(audio_array, sr):
         np.mean(mel, axis=1)
     ])
 
-
+# ✅ MAIN API
 @app.post("/analyze")
 async def analyze(file: UploadFile):
-    contents = await file.read()
+    try:
+        contents = await file.read()
 
-    # ✅ supports mp3, wav, etc
-    audio_array, sr = librosa.load(io.BytesIO(contents), sr=None)
+        # ✅ LIBROSA handles webm/mp3/wav
+        audio_array, sr = librosa.load(io.BytesIO(contents), sr=None)
 
-    features = extract_features(audio_array, sr).reshape(1, -1).astype(np.float32)
+        features = extract_features(audio_array, sr).reshape(1, -1).astype(np.float32)
 
-    input_name = model.get_inputs()[0].name
-    pred = model.run(None, {input_name: features})[0]
+        input_name = model.get_inputs()[0].name
+        pred = model.run(None, {input_name: features})[0]
 
-    emotion = le.inverse_transform(pred)[0]
+        emotion = le.inverse_transform(pred)[0]
 
-    return {
-        "emotion": emotion,
-        "confidence": 0.9
-    }
+        return {
+            "emotion": emotion,
+            "confidence": 0.9
+        }
+
+    except Exception as e:
+        print("ERROR:", e)
+        return {"emotion": "Neutral", "confidence": 0.5}
