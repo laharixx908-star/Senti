@@ -104,7 +104,7 @@ def extract_features(audio_array, sr):
 async def analyze(file: UploadFile):
     contents = await file.read()
 
-    audio_array, sr = sf.read(io.BytesIO(contents))
+    audio_array, sr = librosa.load(io.BytesIO(contents), sr=None)
 
     features = extract_features(audio_array, sr).reshape(1, -1).astype(np.float32)
 
