@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { Mic, Square, Loader2, Play, AlertCircle } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
 import { analyzeVoiceEmotion, EmotionAnalysis } from "../services/gemini";
 
 interface AudioRecorderProps {
@@ -45,7 +44,6 @@ export default function AudioRecorder({
         }
       };
 
-      // ✅ FIXED: CALL ANALYSIS HERE
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, {
           type: "audio/webm",
@@ -80,7 +78,6 @@ export default function AudioRecorder({
     }
   };
 
-  // ✅ CLEAN ANALYSIS FUNCTION
   const handleAnalysis = async (blob: Blob) => {
     setIsAnalyzing(true);
     setError(null);
@@ -120,14 +117,18 @@ export default function AudioRecorder({
         )}
       </button>
 
-      {error && <div className="text-red-500">{error}</div>}
+      {error && (
+        <div className="text-red-500 flex items-center gap-2">
+          <AlertCircle size={16} /> {error}
+        </div>
+      )}
 
-      {audioUrl && (
+      {audioUrl && !isRecording && !isAnalyzing && (
         <button
           onClick={() => new Audio(audioUrl).play()}
-          className="text-white underline"
+          className="text-white underline flex items-center gap-2"
         >
-          Play Recording
+          <Play size={16} /> Play Recording
         </button>
       )}
     </div>
