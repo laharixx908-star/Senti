@@ -24,7 +24,6 @@ const feedbackMap: Record<string, string> = {
   Neutral: "You sound calm and composed.",
 };
 
-// ✅ SEND BLOB DIRECTLY (NO BASE64 DRAMA)
 export async function analyzeVoiceEmotion(blob: Blob): Promise<EmotionAnalysis> {
   const formData = new FormData();
   formData.append("file", blob, "recording.webm");
@@ -45,7 +44,7 @@ export async function analyzeVoiceEmotion(blob: Blob): Promise<EmotionAnalysis> 
     emotion,
     sentiment: sentimentMap[emotion] ?? "neutral",
     intensity: Math.round((data.confidence ?? 0.5) * 10),
-    transcription: "Voice detected",
+    transcription: "No speech detected",
     feedback: feedbackMap[emotion] ?? "Analysis complete.",
   };
 }
