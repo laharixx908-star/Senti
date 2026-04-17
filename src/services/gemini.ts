@@ -24,37 +24,28 @@ const feedbackMap: Record<string, string> = {
   Neutral: "You sound calm and composed.",
 };
 
+// ✅ SEND BLOB DIRECTLY (NO BASE64 DRAMA)
 export async function analyzeVoiceEmotion(blob: Blob): Promise<EmotionAnalysis> {
   const formData = new FormData();
   formData.append("file", blob, "recording.webm");
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20000); // 20s timeout
+  const res = await fetch(`${BACKEND_URL}/analyze`, {
+    method: "POST",
+    body: formData,
+  });
 
-  try {
-    const res = await fetch(`${BACKEND_URL}/analyze`, {
-      method: "POST",
-      body: formData,
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
-
-    if (!res.ok) throw new Error(`Backend error: ${res.status}`);
-
-    const data = await res.json();
-    const emotion: string = data.emotion ?? "Neutral";
-
-    return {
-      emotion,
-      sentiment: sentimentMap[emotion] ?? "neutral",
-      intensity: Math.round((data.confidence ?? 0.5) * 10),
-      transcription: "No speech detected",
-      feedback: feedbackMap[emotion] ?? "Analysis complete.",
-    };
-  } catch (err) {
-    clearTimeout(timeout);
-    console.error("Fetch failed:", err);
-    throw err;
+  if (!res.ok) {
+    throw new Error(`Backend error: ${res.status}`);
   }
+
+  const data = await res.json();
+  const emotion: string = data.emotion ?? "Neutral";
+
+  return {
+    emotion,
+    sentiment: sentimentMap[emotion] ?? "neutral",
+    intensity: Math.round((data.confidence ?? 0.5) * 10),
+    transcription: "Voice detected",
+    feedback: feedbackMap[emotion] ?? "Analysis complete.",
+  };
 }
