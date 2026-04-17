@@ -24,41 +24,37 @@ const feedbackMap: Record<string, string> = {
   Neutral: "You sound calm and composed.",
 };
 
-export async function analyzeVoiceEmotion(
-  base64data: string,
-  mimeType: string
-): Promise<EmotionAnalysis> {
-
-  const byteString = atob(base64data);
-  const byteArray = new Uint8Array(byteString.length);
-
-  for (let i = 0; i < byteString.length; i++) {
-    byteArray[i] = byteString.charCodeAt(i);
-  }
-
-  const audioBlob = new Blob([byteArray], { type: mimeType });
-
+export async function analyzeVoiceEmotion(blob: Blob): Promise<EmotionAnalysis> {
   const formData = new FormData();
+  formData.append("file", blob, "recording.webm");
 
-  // ✅ IMPORTANT FIX: change filename
-  formData.append("file", audioBlob, "audio.wav");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000); // 20s timeout
 
-  const res = await fetch(`${BACKEND_URL}/analyze`, {
-    method: "POST",
-    body: formData,
-    mode: "cors"
-  });
+  try {
+    const res = await fetch(`${BACKEND_URL}/analyze`, {
+      method: "POST",
+      body: formData,
+      signal: controller.signal,
+    });
 
-  if (!res.ok) throw new Error(`Backend error: ${res.status}`);
+    clearTimeout(timeout);
 
-  const data = await res.json();
-  const emotion: string = data.emotion ?? "Neutral";
+    if (!res.ok) throw new Error(`Backend error: ${res.status}`);
 
-  return {
-    emotion,
-    sentiment: sentimentMap[emotion] ?? "neutral",
-    intensity: Math.round((data.confidence ?? 0.5) * 10),
-    transcription: "No speech detected",
-    feedback: feedbackMap[emotion] ?? "Analysis complete.",
-  };
+    const data = await res.json();
+    const emotion: string = data.emotion ?? "Neutral";
+
+    return {
+      emotion,
+      sentiment: sentimentMap[emotion] ?? "neutral",
+      intensity: Math.round((data.confidence ?? 0.5) * 10),
+      transcription: "No speech detected",
+      feedback: feedbackMap[emotion] ?? "Analysis complete.",
+    };
+  } catch (err) {
+    clearTimeout(timeout);
+    console.error("Fetch failed:", err);
+    throw err;
+  }
 }
