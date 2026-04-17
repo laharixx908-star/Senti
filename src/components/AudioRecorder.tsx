@@ -46,8 +46,20 @@ export default function AudioRecorder({ onAnalysisComplete, onRecordingStart }: 
         const url = URL.createObjectURL(audioBlob);
         setAudioUrl(url);
         
-        // Convert to base64 and analyze
-        handleAnalysis(audioBlob);
+       const handleAnalysis = async (blob: Blob) => {
+  setIsAnalyzing(true);
+  setError(null);
+
+  try {
+    const analysis = await analyzeVoiceEmotion(blob);
+    onAnalysisComplete(analysis);
+  } catch (err) {
+    console.error("Analysis failed:", err);
+    setError("Analysis failed. Try a shorter recording.");
+  } finally {
+    setIsAnalyzing(false);
+  }
+};
       };
 
       mediaRecorder.start();
