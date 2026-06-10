@@ -94,7 +94,7 @@ async def analyze(file: UploadFile):
         contents = await file.read()
 
         # ✅ Normalize audio for better accuracy
-        audio_array, sr = librosa.load(io.BytesIO(contents), sr=22050)
+        audio_array, sr = librosa.load(io.BytesIO(contents), sr=22050, mono=True)
 
         features = extract_features(audio_array, sr).reshape(1, -1).astype(np.float32)
 
