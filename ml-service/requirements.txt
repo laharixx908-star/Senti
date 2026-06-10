@@ -2,8 +2,7 @@ fastapi
 uvicorn
 numpy
 librosa
-onnxruntime
+scikit-learn
 joblib
 soundfile
 python-multipart
-gdown
