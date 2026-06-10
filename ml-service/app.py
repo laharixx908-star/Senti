@@ -111,9 +111,7 @@ async def analyze(file: UploadFile):
             "confidence": confidence
         }
 
-    except Exception as e:
+  except Exception as e:
         print("ERROR:", e)
-        return {
-            "emotion": "Neutral",
-            "confidence": 0.5
-        }
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(e))  
