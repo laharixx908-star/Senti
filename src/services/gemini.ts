@@ -50,7 +50,12 @@ export async function analyzeVoiceEmotion(blob: Blob): Promise<EmotionAnalysis> 
     emotion,
     sentiment: sentimentMap[emotion] ?? "neutral",
     intensity: Math.round((data.confidence ?? 0.5) * 10),
-    transcription: "No speech detected",
+    transcription: data.transcription ?? "",
     feedback: feedbackMap[emotion] ?? "Analysis complete.",
   };
+}
+export async function wakeUpBackend() {
+  try {
+    await fetch(`${BACKEND_URL}/`);
+  } catch (_) {}
 }
