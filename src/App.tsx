@@ -3,16 +3,15 @@ import { motion, AnimatePresence } from "motion/react";
 import { Mic2, Activity, ShieldCheck, Info } from "lucide-react";
 import AudioRecorder from "./components/AudioRecorder";
 import AnalysisResult from "./components/AnalysisResult";
-import { EmotionAnalysis } from "./services/gemini";
-import { wakeUpBackend } from './services/gemini';
+import { EmotionAnalysis, wakeUpBackend } from "./services/gemini";
 
 export default function App() {
   const [analysis, setAnalysis] = useState<EmotionAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   useEffect(() => {
-  wakeUpBackend(); // pings backend the moment user opens the app
-}, []);
+    wakeUpBackend();
+  }, []);
 
   const handleAnalysisComplete = (data: EmotionAnalysis) => {
     setAnalysis(data);
@@ -26,7 +25,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#E6E6E6] text-[#151619] font-sans selection:bg-[#FF4444] selection:text-white">
-      {/* Top Navigation / Header */}
       <header className="border-b border-[#151619]/10 py-6 px-8 flex justify-between items-center">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-[#151619] rounded-xl flex items-center justify-center shadow-lg">
@@ -37,7 +35,6 @@ export default function App() {
             <span className="text-[10px] font-mono uppercase tracking-widest text-[#8E9299]">Emotion Analysis</span>
           </div>
         </div>
-        
         <div className="hidden md:flex items-center gap-8">
           <button className="p-2 hover:bg-[#151619]/5 rounded-full transition-colors">
             <Info className="w-5 h-5 text-[#8E9299]" />
@@ -46,7 +43,6 @@ export default function App() {
       </header>
 
       <main className="max-w-6xl mx-auto px-8 py-12 grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-        {/* Left Column: Recording Controls */}
         <div className="flex flex-col gap-8">
           <div className="flex flex-col gap-4">
             <h2 className="text-4xl font-bold tracking-tighter leading-none">
@@ -54,7 +50,7 @@ export default function App() {
               <span className="text-[#FF4444]">vocal analysis.</span>
             </h2>
             <p className="text-[#8E9299] max-w-md leading-relaxed">
-              Our AI analyzes pitch, tone, and vocal inflections to provide 
+              Our AI analyzes pitch, tone, and vocal inflections to provide
               real-time emotional feedback. Simply record a short clip to begin.
             </p>
           </div>
@@ -71,14 +67,13 @@ export default function App() {
           </div>
 
           <div className="mt-4">
-            <AudioRecorder 
+            <AudioRecorder
               onAnalysisComplete={handleAnalysisComplete}
               onRecordingStart={handleRecordingStart}
             />
           </div>
         </div>
 
-        {/* Right Column: Analysis Results */}
         <div className="flex flex-col gap-6 min-h-[400px]">
           <AnimatePresence mode="wait">
             {analysis ? (
@@ -111,12 +106,9 @@ export default function App() {
               </motion.div>
             )}
           </AnimatePresence>
-
-          {/* Technical Specs Footer Removed */}
         </div>
       </main>
 
-      {/* Background Decorative Elements */}
       <div className="fixed bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-white/50 to-transparent pointer-events-none -z-10" />
     </div>
   );
