@@ -1,3 +1,9 @@
+// Add this at the top of gemini.ts
+export async function wakeUpBackend() {
+  try {
+    await fetch(`${BACKEND_URL}/`, { method: 'GET' });
+  } catch (_) {}
+}
 export interface EmotionAnalysis {
   emotion: string;
   sentiment: "positive" | "negative" | "neutral";
