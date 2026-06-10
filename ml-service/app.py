@@ -32,7 +32,10 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(BASE_DIR, "emotion_model.onnx")
 LE_PATH = os.path.join(BASE_DIR, "label_encoder.pkl")
 
-
+@app.get("/")
+def health():
+    return {"status": "ok"}
+    
 # ✅ SAFE DOWNLOAD
 def download_file(file_id, path, min_size=1000000):
     if os.path.exists(path):
