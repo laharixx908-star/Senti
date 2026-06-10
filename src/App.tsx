@@ -4,6 +4,7 @@ import { Mic2, Activity, ShieldCheck, Info } from "lucide-react";
 import AudioRecorder from "./components/AudioRecorder";
 import AnalysisResult from "./components/AnalysisResult";
 import { EmotionAnalysis, wakeUpBackend } from "./services/gemini";
+import { wakeUpBackend } from "./services/gemini";
 
 export default function App() {
   const [analysis, setAnalysis] = useState<EmotionAnalysis | null>(null);
