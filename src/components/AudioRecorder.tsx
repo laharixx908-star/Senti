@@ -31,15 +31,16 @@ export default function AudioRecorder({
     try {
       setError(null);
       setAudioUrl(null);
+      audioChunksRef.current = [];
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // In startRecording(), change MediaRecorder options:
-const mediaRecorder = new MediaRecorder(stream, {
-  mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-    ? 'audio/webm;codecs=opus'
-    : 'audio/webm'
-});
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : 'audio/webm'
+      });
+      mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -47,13 +48,12 @@ const mediaRecorder = new MediaRecorder(stream, {
         }
       };
 
-     // In onstop, convert to wav via AudioContext before sending:
-mediaRecorder.onstop = async () => {
-  const rawBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-  const url = URL.createObjectURL(rawBlob);
-  setAudioUrl(url);
-  await handleAnalysis(rawBlob);
-};
+      mediaRecorder.onstop = async () => {
+        const rawBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const url = URL.createObjectURL(rawBlob);
+        setAudioUrl(url);
+        await handleAnalysis(rawBlob);
+      };
 
       mediaRecorder.start();
       setIsRecording(true);
