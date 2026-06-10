@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Mic2, Activity, ShieldCheck, Info } from "lucide-react";
 import AudioRecorder from "./components/AudioRecorder";
