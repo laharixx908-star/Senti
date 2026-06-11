@@ -47,230 +47,243 @@ function NeonEmoji({ emotion, color: s }: { emotion: string; color: string }) {
   const face = (mouth: React.ReactNode, extras?: React.ReactNode) => (
     <svg viewBox="0 0 48 48" width="36" height="36" style={{ filter: glow }} fill="none" xmlns="http://www.w3.org/2000/svg">
       <circle cx="24" cy="24" r="20" stroke={s} strokeWidth="2.5" />
-      <circle cx="17" cy="19" r="2" fill={s} />
-      <circle cx="31" cy="19" r="2" fill={s} />
       {extras}
       {mouth}
     </svg>
   );
 
+  const eyes = <><circle cx="17" cy="19" r="2" fill={s} /><circle cx="31" cy="19" r="2" fill={s} /></>;
+  const bigEyes = <><circle cx="17" cy="20" r="2.5" fill={s} /><circle cx="31" cy="20" r="2.5" fill={s} /></>;
+  const angryBrows = <><path d="M13 16 Q17 19 21 16" stroke={s} strokeWidth="2.5" strokeLinecap="round"/><path d="M27 16 Q31 19 35 16" stroke={s} strokeWidth="2.5" strokeLinecap="round"/></>;
+  const raisedBrows = <><path d="M13 15 Q17 12 21 15" stroke={s} strokeWidth="2" strokeLinecap="round"/><path d="M27 15 Q31 12 35 15" stroke={s} strokeWidth="2" strokeLinecap="round"/></>;
+  const worriedBrows = <><path d="M13 17 Q17 14 21 17" stroke={s} strokeWidth="2" strokeLinecap="round"/><path d="M27 17 Q31 14 35 17" stroke={s} strokeWidth="2" strokeLinecap="round"/></>;
+  const droopyLids = <><path d="M13 19 Q17 22 21 19" stroke={s} strokeWidth="2.5" strokeLinecap="round"/><path d="M27 19 Q31 22 35 19" stroke={s} strokeWidth="2.5" strokeLinecap="round"/></>;
+  const tears = <><path d="M15 23 Q12 28 15 31 Q18 28 15 23Z" fill={s}/><path d="M33 23 Q30 28 33 31 Q36 28 33 23Z" fill={s}/></>;
+  const smileBig = <path d="M13 27 Q24 40 35 27" stroke={s} strokeWidth="2.5" strokeLinecap="round" fill="none"/>;
+  const smileMed = <path d="M15 27 Q24 37 33 27" stroke={s} strokeWidth="2.5" strokeLinecap="round" fill="none"/>;
+  const smileSmall = <path d="M16 28 Q24 34 32 28" stroke={s} strokeWidth="2.5" strokeLinecap="round" fill="none"/>;
+  const frownBig = <path d="M13 35 Q24 22 35 35" stroke={s} strokeWidth="2.5" strokeLinecap="round" fill="none"/>;
+  const frownMed = <path d="M15 33 Q24 25 33 33" stroke={s} strokeWidth="2.5" strokeLinecap="round" fill="none"/>;
+  const frownSmall = <path d="M16 32 Q24 26 32 32" stroke={s} strokeWidth="2.5" strokeLinecap="round" fill="none"/>;
+
   switch (emotion) {
+
     case "Happy":
-      return face(<path d="M16 28 Q24 36 32 28" stroke={s} strokeWidth="2.5" strokeLinecap="round" />);
+      return face(smileMed, eyes);
 
     case "Excited":
-      return face(
-        <path d="M14 28 Q24 38 34 28" stroke={s} strokeWidth="2.5" strokeLinecap="round" />,
-        <><line x1="6" y1="8" x2="6" y2="13" stroke={s} strokeWidth="1.5" strokeLinecap="round"/>
-        <line x1="3.5" y1="10.5" x2="8.5" y2="10.5" stroke={s} strokeWidth="1.5" strokeLinecap="round"/>
-        <line x1="41" y1="6" x2="41" y2="11" stroke={s} strokeWidth="1.5" strokeLinecap="round"/>
-        <line x1="38.5" y1="8.5" x2="43.5" y2="8.5" stroke={s} strokeWidth="1.5" strokeLinecap="round"/></>
+      return face(smileBig,
+        <>{eyes}
+        <line x1="5" y1="7" x2="5" y2="13" stroke={s} strokeWidth="1.5" strokeLinecap="round"/>
+        <line x1="2" y1="10" x2="8" y2="10" stroke={s} strokeWidth="1.5" strokeLinecap="round"/>
+        <line x1="43" y1="5" x2="43" y2="11" stroke={s} strokeWidth="1.5" strokeLinecap="round"/>
+        <line x1="40" y1="8" x2="46" y2="8" stroke={s} strokeWidth="1.5" strokeLinecap="round"/></>
       );
 
     case "Loving":
-      return face(
-        <path d="M16 28 Q24 36 32 28" stroke={s} strokeWidth="2.5" strokeLinecap="round" />,
-        <path d="M21 10 C21 8 19 6 17 8 C15 10 17 13 21 15 C25 13 27 10 25 8 C23 6 21 8 21 10Z" fill={s} />
+      // Big smile + heart above with slightly closed eyes from joy
+      return face(smileMed,
+        <><path d="M13 18 Q17 15 21 18" stroke={s} strokeWidth="2" strokeLinecap="round"/>
+        <path d="M27 18 Q31 15 35 18" stroke={s} strokeWidth="2" strokeLinecap="round"/>
+        <path d="M24 13 C24 11 22 8 19 10 C16 12 18 16 24 19 C30 16 32 12 29 10 C26 8 24 11 24 13Z" fill={s}/></>
       );
 
     case "Grateful":
-      return face(
-        <path d="M17 28 Q24 34 31 28" stroke={s} strokeWidth="2.5" strokeLinecap="round" />,
-        <>
-          <path d="M14 19 Q17 17 20 19" stroke={s} strokeWidth="2" strokeLinecap="round" />
-          <path d="M28 19 Q31 17 34 19" stroke={s} strokeWidth="2" strokeLinecap="round" />
-          <circle cx="17" cy="19" r="2" fill="transparent" />
-          <circle cx="31" cy="19" r="2" fill="transparent" />
-        </>
+      // Gentle smile + soft closed eyes + subtle sparkle
+      return face(smileSmall,
+        <><path d="M13 18 Q17 15 21 18" stroke={s} strokeWidth="2" strokeLinecap="round"/>
+        <path d="M27 18 Q31 15 35 18" stroke={s} strokeWidth="2" strokeLinecap="round"/>
+        <line x1="5" y1="10" x2="7" y2="12" stroke={s} strokeWidth="1.2" strokeLinecap="round"/>
+        <line x1="7" y1="8" x2="5" y2="12" stroke={s} strokeWidth="1.2" strokeLinecap="round"/>
+        <line x1="41" y1="10" x2="43" y2="12" stroke={s} strokeWidth="1.2" strokeLinecap="round"/>
+        <line x1="43" y1="8" x2="41" y2="12" stroke={s} strokeWidth="1.2" strokeLinecap="round"/></>
       );
 
     case "Confident":
-      return face(<path d="M19 29 Q26 34 33 29" stroke={s} strokeWidth="2.5" strokeLinecap="round" />);
+      // Asymmetric smirk + steady eyes
+      return face(
+        <path d="M18 30 Q26 37 35 29" stroke={s} strokeWidth="2.5" strokeLinecap="round" fill="none"/>,
+        <>{eyes}</>
+      );
 
     case "Proud":
-      return face(
-        <path d="M17 28 Q24 35 31 28" stroke={s} strokeWidth="2.5" strokeLinecap="round" />,
-        <polyline points="10,14 14,8 19,12 24,6 29,12 34,8 38,14" stroke={s} strokeWidth="2" strokeLinejoin="round" fill="none"/>
+      // Big smile + crown
+      return face(smileMed,
+        <>{eyes}<polyline points="9,15 13,8 19,13 24,5 29,13 35,8 39,15" stroke={s} strokeWidth="2" strokeLinejoin="round" fill="none"/></>
       );
 
     case "Surprised":
+      // Wide O mouth + raised brows + big eyes
       return face(
-        <ellipse cx="24" cy="31" rx="5" ry="5" stroke={s} strokeWidth="2.5" />,
-        <>
-          <path d="M13 15 Q17 12 21 15" stroke={s} strokeWidth="2" strokeLinecap="round" />
-          <path d="M27 15 Q31 12 35 15" stroke={s} strokeWidth="2" strokeLinecap="round" />
-          <circle cx="17" cy="19" r="2" fill="transparent" />
-          <circle cx="31" cy="19" r="2" fill="transparent" />
-        </>
+        <ellipse cx="24" cy="32" rx="5" ry="5" stroke={s} strokeWidth="2.5"/>,
+        <>{raisedBrows}{bigEyes}</>
       );
 
     case "Relieved":
-      return face(
-        <path d="M16 28 Q24 34 32 28" stroke={s} strokeWidth="2.5" strokeLinecap="round" />,
-        // sweat wiped away
-        <path d="M36 10 Q34 14 36 16 Q38 14 36 10Z" fill={s} opacity="0.5" />
+      // Happy smile + sweat drop = stress gone
+      return face(smileMed,
+        <>{eyes}<path d="M37 9 Q35 14 37 17 Q39 14 37 9Z" fill={s} opacity="0.7"/></>
       );
 
     case "Hopeful":
-      return face(
-        <path d="M16 28 Q24 35 32 28" stroke={s} strokeWidth="2.5" strokeLinecap="round" />,
-        // star
-        <polygon points="24,3 25.5,7.5 30,7.5 26.5,10 28,14.5 24,12 20,14.5 21.5,10 18,7.5 22.5,7.5" fill={s} opacity="0.8" />
+      // Warm smile + star
+      return face(smileSmall,
+        <>{eyes}<polygon points="24,2 25.8,7.5 31.5,7.5 27,11 28.8,16.5 24,13 19.2,16.5 21,11 16.5,7.5 22.2,7.5" fill={s} opacity="0.85"/></>
       );
 
     case "Nostalgic":
-      return face(
-        <path d="M16 28 Q24 33 32 28" stroke={s} strokeWidth="2.5" strokeLinecap="round" />,
-        // clock hands suggesting time passing
-        <>
-          <circle cx="40" cy="10" r="5" stroke={s} strokeWidth="1.5" />
-          <line x1="40" y1="7" x2="40" y2="10" stroke={s} strokeWidth="1.5" strokeLinecap="round"/>
-          <line x1="40" y1="10" x2="43" y2="10" stroke={s} strokeWidth="1.5" strokeLinecap="round"/>
-        </>
+      // Soft smile + small clock
+      return face(smileSmall,
+        <>{eyes}
+        <circle cx="40" cy="9" r="5" stroke={s} strokeWidth="1.5"/>
+        <line x1="40" y1="6" x2="40" y2="9" stroke={s} strokeWidth="1.5" strokeLinecap="round"/>
+        <line x1="40" y1="9" x2="43" y2="9" stroke={s} strokeWidth="1.5" strokeLinecap="round"/></>
       );
 
     case "Neutral":
-      return face(<line x1="17" y1="30" x2="31" y2="30" stroke={s} strokeWidth="2.5" strokeLinecap="round" />);
+      // Flat line + normal eyes
+      return face(
+        <line x1="17" y1="30" x2="31" y2="30" stroke={s} strokeWidth="2.5" strokeLinecap="round"/>,
+        <>{eyes}</>
+      );
 
     case "Bored":
+      // Flat/slight frown + one droopy eye + yawn lines
       return face(
-        <path d="M17 31 Q24 28 31 31" stroke={s} strokeWidth="2.5" strokeLinecap="round" />,
-        <path d="M13 17 Q17 20 21 17" stroke={s} strokeWidth="2" strokeLinecap="round" />
+        <path d="M17 31 Q24 27 31 31" stroke={s} strokeWidth="2.5" strokeLinecap="round" fill="none"/>,
+        <>{eyes}
+        <path d="M13 17 Q17 20 21 17" stroke={s} strokeWidth="2" strokeLinecap="round"/>
+        <ellipse cx="7" cy="30" rx="3" ry="5" stroke={s} strokeWidth="1.2" opacity="0.5"/></>
       );
 
     case "Confused":
+      // Wavy mouth + question mark eyebrow
       return face(
-        <path d="M16 30 Q19 27 22 30 Q25 33 28 30 Q31 27 34 30" stroke={s} strokeWidth="2.5" strokeLinecap="round" fill="none" />,
-        <text x="38" y="12" fontSize="10" fill={s} fontWeight="bold">?</text>
+        <path d="M16 30 Q19 27 22 30 Q25 33 28 30 Q31 27 34 30" stroke={s} strokeWidth="2.5" strokeLinecap="round" fill="none"/>,
+        <>{eyes}
+        <path d="M27 12 Q29 9 31 12 Q31 14 29 14 L29 16" stroke={s} strokeWidth="1.8" strokeLinecap="round" fill="none"/>
+        <circle cx="29" cy="18" r="1" fill={s}/></>
       );
 
     case "Sleepy":
+      // Small smile + droopy lids + Zzz
       return face(
-        <path d="M17 29 Q24 33 31 29" stroke={s} strokeWidth="2.5" strokeLinecap="round" />,
-        <>
-          <path d="M13 19 Q17 22 21 19" stroke={s} strokeWidth="2.5" strokeLinecap="round" />
-          <path d="M27 19 Q31 22 35 19" stroke={s} strokeWidth="2.5" strokeLinecap="round" />
-          <circle cx="17" cy="19" r="2" fill="transparent" />
-          <circle cx="31" cy="19" r="2" fill="transparent" />
-          <text x="36" y="11" fontSize="9" fill={s} fontWeight="bold">z</text>
-          <text x="39" y="7" fontSize="7" fill={s} fontWeight="bold">z</text>
-        </>
+        <path d="M17 30 Q24 34 31 30" stroke={s} strokeWidth="2.5" strokeLinecap="round" fill="none"/>,
+        <>{droopyLids}
+        <text x="36" y="12" fontSize="9" fill={s} fontWeight="bold" fontFamily="monospace">z</text>
+        <text x="40" y="7" fontSize="7" fill={s} fontWeight="bold" fontFamily="monospace">z</text></>
       );
 
     case "Exhausted":
+      // Flat mouth + very heavy droopy lids + sweat
       return face(
-        <line x1="17" y1="31" x2="31" y2="31" stroke={s} strokeWidth="2.5" strokeLinecap="round" />,
-        <>
-          <path d="M13 20 Q17 24 21 20" stroke={s} strokeWidth="2.5" strokeLinecap="round" />
-          <path d="M27 20 Q31 24 35 20" stroke={s} strokeWidth="2.5" strokeLinecap="round" />
-          <circle cx="17" cy="19" r="2" fill="transparent" />
-          <circle cx="31" cy="19" r="2" fill="transparent" />
-          <path d="M37 12 Q35 16 37 18 Q39 16 37 12Z" fill={s} />
-        </>
+        <line x1="16" y1="31" x2="32" y2="31" stroke={s} strokeWidth="2.5" strokeLinecap="round"/>,
+        <>{droopyLids}<path d="M38 11 Q36 16 38 18 Q40 16 38 11Z" fill={s}/></>
       );
 
     case "Sad":
-      return face(<path d="M16 32 Q24 26 32 32" stroke={s} strokeWidth="2.5" strokeLinecap="round" />);
+      // Clear frown + normal eyes
+      return face(frownMed, eyes);
 
     case "Angry":
-      return face(
-        <path d="M16 32 Q24 26 32 32" stroke={s} strokeWidth="2.5" strokeLinecap="round" />,
-        <>
-          <path d="M13 15 Q17 18 21 15" stroke={s} strokeWidth="2.5" strokeLinecap="round" />
-          <path d="M27 15 Q31 18 35 15" stroke={s} strokeWidth="2.5" strokeLinecap="round" />
-        </>
+      // Deep frown + sharp inward brows + eyes lower
+      return face(frownMed,
+        <>{angryBrows}<circle cx="17" cy="21" r="2" fill={s}/><circle cx="31" cy="21" r="2" fill={s}/></>
       );
 
     case "Fearful":
+      // Open mouth oval + raised brows + big scared eyes
       return face(
-        <ellipse cx="24" cy="32" rx="5" ry="3" stroke={s} strokeWidth="2.5" />,
-        <>
-          <path d="M13 16 Q17 13 21 16" stroke={s} strokeWidth="2" strokeLinecap="round" />
-          <path d="M27 16 Q31 13 35 16" stroke={s} strokeWidth="2" strokeLinecap="round" />
-        </>
+        <ellipse cx="24" cy="33" rx="5" ry="3.5" stroke={s} strokeWidth="2.5"/>,
+        <>{raisedBrows}{bigEyes}</>
       );
 
     case "Disgusted":
+      // Asymmetric curled mouth + raised one brow + tongue out
       return face(
-        <path d="M16 32 Q20 28 24 31 Q28 34 32 29" stroke={s} strokeWidth="2.5" strokeLinecap="round" fill="none" />,
-        <path d="M13 15 Q17 18 21 16" stroke={s} strokeWidth="2" strokeLinecap="round" />
+        <><path d="M15 30 Q19 26 24 29 Q28 33 33 27" stroke={s} strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+        <ellipse cx="20" cy="36" rx="3" ry="2" stroke={s} strokeWidth="1.5"/></>,
+        <>{eyes}
+        <path d="M13 16 Q17 19 21 16" stroke={s} strokeWidth="2" strokeLinecap="round"/>
+        <line x1="27" y1="16" x2="35" y2="16" stroke={s} strokeWidth="2" strokeLinecap="round"/></>
       );
 
     case "Crying":
-      return face(
-        <path d="M16 32 Q24 26 32 32" stroke={s} strokeWidth="2.5" strokeLinecap="round" />,
-        <>
-          <path d="M15 24 Q13 28 15 30 Q17 28 15 24Z" fill={s} />
-          <path d="M33 24 Q31 28 33 30 Q35 28 33 24Z" fill={s} />
-        </>
-      );
+      // Frown + eyes + big tears
+      return face(frownMed, <>{eyes}{tears}</>);
 
     case "Depressed":
-      return face(
-        <path d="M14 34 Q24 24 34 34" stroke={s} strokeWidth="2.5" strokeLinecap="round" />,
-        <>
-          <path d="M13 21 Q17 18 21 21" stroke={s} strokeWidth="2" strokeLinecap="round" />
-          <path d="M27 21 Q31 18 35 21" stroke={s} strokeWidth="2" strokeLinecap="round" />
-        </>
+      // Extreme frown + heavy sad brows + barely-there eyes
+      return face(frownBig,
+        <><path d="M12 22 Q17 19 22 22" stroke={s} strokeWidth="2" strokeLinecap="round"/>
+        <path d="M26 22 Q31 19 36 22" stroke={s} strokeWidth="2" strokeLinecap="round"/>
+        <circle cx="17" cy="26" r="1.5" fill={s} opacity="0.6"/>
+        <circle cx="31" cy="26" r="1.5" fill={s} opacity="0.6"/></>
       );
 
     case "Anxious":
+      // Wavy nervous mouth + worried brows + sweat
       return face(
-        <path d="M16 31 Q19 28 22 31 Q25 34 28 31 Q31 28 34 31" stroke={s} strokeWidth="2.5" strokeLinecap="round" fill="none" />,
-        <path d="M37 10 Q35 14 37 16 Q39 14 37 10Z" fill={s} />
+        <path d="M15 31 Q18 28 21 31 Q24 34 27 31 Q30 28 33 31" stroke={s} strokeWidth="2.5" strokeLinecap="round" fill="none"/>,
+        <>{worriedBrows}<circle cx="17" cy="21" r="2" fill={s}/><circle cx="31" cy="21" r="2" fill={s}/>
+        <path d="M38 9 Q36 14 38 16 Q40 14 38 9Z" fill={s}/></>
       );
 
     case "Lonely":
-      return face(
-        <path d="M17 31 Q24 27 31 31" stroke={s} strokeWidth="2.5" strokeLinecap="round" />,
-        <path d="M15 25 Q13 29 15 31 Q17 29 15 25Z" fill={s} />
+      // Small frown + single tear + empty circles around face
+      return face(frownSmall,
+        <>{eyes}
+        <path d="M15 24 Q12 29 15 32 Q18 29 15 24Z" fill={s}/>
+        <circle cx="6" cy="24" r="2" stroke={s} strokeWidth="1" opacity="0.35"/>
+        <circle cx="42" cy="24" r="2" stroke={s} strokeWidth="1" opacity="0.35"/></>
       );
 
     case "Embarrassed":
-      return face(
-        <path d="M17 29 Q24 34 31 29" stroke={s} strokeWidth="2.5" strokeLinecap="round" />,
-        <>
-          <circle cx="12" cy="24" r="4" fill={s} opacity="0.35" />
-          <circle cx="36" cy="24" r="4" fill={s} opacity="0.35" />
-        </>
+      // Smile (hiding) + big blush circles + eyes looking away
+      return face(smileSmall,
+        <><circle cx="15" cy="19" r="2" fill={s}/>
+        <circle cx="29" cy="19" r="2" fill={s}/>
+        <circle cx="10" cy="26" r="6" fill={s} opacity="0.25"/>
+        <circle cx="38" cy="26" r="6" fill={s} opacity="0.25"/>
+        <line x1="19" y1="14" x2="27" y2="14" stroke={s} strokeWidth="1.5" strokeLinecap="round" opacity="0.4"/></>
       );
 
     case "Heartbroken":
-      return face(
-        <path d="M16 32 Q24 26 32 32" stroke={s} strokeWidth="2.5" strokeLinecap="round" />,
-        <path d="M21 8 C21 6 19 4 17 6 C15 8 17 11 21 13 L24 11 M24 11 C28 9 30 6 28 4 C26 2 24 4 24 6" stroke={s} strokeWidth="1.8" fill="none" strokeLinecap="round"/>
+      // Sad frown + broken heart (split down middle)
+      return face(frownMed,
+        <>{eyes}
+        <path d="M24 13 C24 11 22 8 19 10 C16 12 18 15 24 18 C30 15 32 12 29 10 C26 8 24 11 24 13Z" fill={s} opacity="0.9"/>
+        <line x1="24" y1="11" x2="24" y2="19" stroke="rgba(0,0,0,0.6)" strokeWidth="2"/>
+        <path d="M24 14 L22 17 M24 14 L26 17" stroke="rgba(0,0,0,0.5)" strokeWidth="1" strokeLinecap="round" fill="none"/></>
       );
 
     case "Frustrated":
-      return face(
-        <path d="M16 32 Q24 27 32 32" stroke={s} strokeWidth="2.5" strokeLinecap="round" />,
-        <>
-          {/* one raised angry brow, one flat */}
-          <path d="M13 15 Q17 17 21 14" stroke={s} strokeWidth="2.5" strokeLinecap="round" />
-          <line x1="27" y1="15" x2="35" y2="15" stroke={s} strokeWidth="2.5" strokeLinecap="round" />
-          {/* steam lines */}
-          <line x1="38" y1="8" x2="38" y2="13" stroke={s} strokeWidth="1.5" strokeLinecap="round"/>
-          <line x1="41" y1="6" x2="41" y2="11" stroke={s} strokeWidth="1.5" strokeLinecap="round"/>
-        </>
+      // Frown + one angry brow + one flat brow (asymmetric) + steam
+      return face(frownSmall,
+        <><path d="M13 16 Q17 19 21 15" stroke={s} strokeWidth="2.5" strokeLinecap="round"/>
+        <line x1="27" y1="16" x2="35" y2="16" stroke={s} strokeWidth="2.5" strokeLinecap="round"/>
+        <circle cx="17" cy="21" r="2" fill={s}/>
+        <circle cx="31" cy="21" r="2" fill={s}/>
+        <line x1="38" y1="7" x2="38" y2="13" stroke={s} strokeWidth="1.8" strokeLinecap="round"/>
+        <line x1="41" y1="5" x2="41" y2="11" stroke={s} strokeWidth="1.8" strokeLinecap="round"/></>
       );
 
     case "Jealous":
-      return face(
-        <path d="M17 30 Q24 26 31 30" stroke={s} strokeWidth="2.5" strokeLinecap="round" />,
-        <>
-          {/* side-eye: pupils shifted to corners */}
-          <circle cx="17" cy="19" r="2" fill="transparent" />
-          <circle cx="31" cy="19" r="2" fill="transparent" />
-          <circle cx="15" cy="19" r="2" fill={s} />
-          <circle cx="29" cy="19" r="2" fill={s} />
-          {/* green tinge dots on cheeks */}
-          <circle cx="10" cy="25" r="3" fill={s} opacity="0.3" />
-          <circle cx="38" cy="25" r="3" fill={s} opacity="0.3" />
-        </>
+      // Slight frown + side-eye pupils shifted left + green cheek blush
+      return face(frownSmall,
+        <><circle cx="15" cy="19" r="2" fill={s}/>
+        <circle cx="29" cy="19" r="2" fill={s}/>
+        <path d="M13 15 Q17 17 21 16" stroke={s} strokeWidth="1.8" strokeLinecap="round"/>
+        <path d="M27 15 Q31 17 35 16" stroke={s} strokeWidth="1.8" strokeLinecap="round"/>
+        <circle cx="10" cy="26" r="5" fill={s} opacity="0.2"/>
+        <circle cx="38" cy="26" r="5" fill={s} opacity="0.2"/></>
       );
 
     default:
-      return face(<line x1="17" y1="30" x2="31" y2="30" stroke={s} strokeWidth="2.5" strokeLinecap="round" />);
+      return face(
+        <line x1="17" y1="30" x2="31" y2="30" stroke={s} strokeWidth="2.5" strokeLinecap="round"/>,
+        <>{eyes}</>
+      );
   }
 }
 
