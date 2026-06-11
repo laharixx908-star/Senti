@@ -26,51 +26,66 @@ EMOTIONS = (
     "Sleepy, Exhausted, Frustrated, Relieved, Nostalgic, Jealous, Hopeful"
 )
 
-# Exhaustive nuance rules — one clear trigger per emotion to prevent misclassification
-NUANCES = """
-EMOTION DECISION RULES — follow strictly, top rules override bottom ones:
+# Hard keyword rules — these override the LLM entirely to fix consistent misclassifications
+KEYWORD_RULES = [
+    ("Sleepy",     ["sleepy", "so sleepy", "feel sleepy", "very sleepy", "want to sleep",
+                    "wanna sleep", "need to sleep", "take a nap", "power nap", "nap",
+                    "drowsy", "yawn", "yawning", "falling asleep", "can't keep my eyes open",
+                    "eyes are heavy", "dozing off"]),
+    ("Exhausted",  ["exhausted", "burnt out", "burned out", "completely drained",
+                    "no energy left", "worn out", "running on empty", "can't go on"]),
+    ("Crying",     ["crying", "i'm crying", "i was crying", "been crying", "can't stop crying",
+                    "tears", "sobbing", "i cried"]),
+    ("Angry",      ["i hate", "so angry", "pissed off", "furious", "i'm enraged", "i want to scream"]),
+    ("Frustrated", ["so frustrated", "keeps failing", "why won't it", "nothing works",
+                    "i'm done with this", "fed up", "keeps going wrong"]),
+    ("Loving",     ["i love you", "i love her", "i love him", "i love them",
+                    "i miss you so much", "you mean everything"]),
+    ("Anxious",    ["i'm anxious", "so anxious", "having anxiety", "panic attack",
+                    "i keep worrying", "can't stop worrying"]),
+    ("Depressed",  ["nothing matters", "feel empty", "don't want to go on",
+                    "life has no meaning", "i feel hopeless", "no point anymore"]),
+]
 
-PHYSICAL STATE (body-based, never emotional diagnoses):
-- Sleepy      → tired, drowsy, wants to sleep, yawning ("I'm so sleepy", "I wanna nap", "can't keep eyes open")
-- Exhausted   → physically or mentally drained after effort ("I'm burnt out", "I've been working non-stop", "no energy left")
+async def get_ai_feedback(transcription: str, emotion: str) -> str:
+    """Get personalised feedback for a keyword-matched emotion."""
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            res = await client.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
+                json={
+                    "model": "llama-3.3-70b-versatile",
+                    "max_tokens": 80,
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": (
+                                "Write 1-2 sentences of warm, specific, empathetic feedback "
+                                "responding directly to what the person said. "
+                                "No generic advice. Reply with ONLY the feedback text, no JSON, no quotes."
+                            ),
+                        },
+                        {
+                            "role": "user",
+                            "content": f'The person said: "{transcription}". Detected emotion: {emotion}.',
+                        },
+                    ],
+                },
+            )
+        if res.status_code == 200:
+            return res.json()["choices"][0]["message"]["content"].strip()
+    except Exception:
+        pass
+    return ""
 
-NEGATIVE EMOTIONS — use precise definitions, do NOT over-diagnose:
-- Depressed   → ONLY genuine hopelessness, emptiness, loss of meaning ("nothing matters", "I don't see the point", "I feel empty inside"). NEVER for tiredness, sadness, or temporary low mood.
-- Heartbroken → romantic loss or deep grief ("she left me", "I miss him so much it hurts", "I lost my dog")
-- Sad         → general unhappiness, disappointment, loss ("I didn't get the job", "my friend moved away", "I feel blue")
-- Crying      → actively crying or describing crying ("I've been crying all day", "I can't stop crying", tears in voice)
-- Lonely      → feeling isolated or missing connection ("nobody talks to me", "I feel so alone", "I have no one")
-- Anxious     → worry, nervousness, overthinking ("I'm worried about", "what if something goes wrong", "I can't stop thinking")
-- Fearful     → specific fear or threat ("I'm scared of", "something bad will happen", "I'm terrified")
-- Angry       → frustration that has escalated to anger ("I hate this", "this is so unfair", "they betrayed me")
-- Frustrated  → irritation at obstacles, not yet anger ("this keeps happening", "why won't it work", "I'm so done with this")
-- Disgusted   → revulsion at something specific ("that's gross", "I can't believe they did that", "it's disgusting")
-- Embarrassed → social shame or awkwardness ("everyone was looking", "I made a fool of myself", "so embarrassing")
-- Jealous     → envy of others ("they have everything", "why does she get all the attention", "I wish I had that")
-
-NEUTRAL / AMBIGUOUS:
-- Confused    → genuinely uncertain or puzzled ("I don't understand", "what's going on", "I'm lost")
-- Bored       → lack of stimulation ("nothing to do", "this is so dull", "I'm bored out of my mind")
-- Neutral     → factual, flat, no strong emotion. Use as LAST RESORT only.
-
-POSITIVE EMOTIONS:
-- Happy       → calm, content joy ("I'm doing well", "had a nice day", "feeling good")
-- Excited     → high energy anticipation ("I can't wait!", "this is amazing!", "I'm so pumped")
-- Loving      → affection for a person ("I love you", "I miss her so much", "she means everything to me")
-- Grateful    → thankfulness ("thank you so much", "I'm so lucky", "I appreciate everything")
-- Proud       → achievement or admiration ("I did it", "I'm so proud of my son", "we won")
-- Confident   → self-assurance ("I've got this", "I know I can do it", "I'm ready")
-- Relieved    → stress lifted ("thank god it's over", "I was so worried but it's fine", "finally done")
-- Hopeful     → optimism about future ("things will get better", "I think it'll work out", "I'm looking forward to")
-- Nostalgic   → longing for the past ("I miss those days", "reminds me of childhood", "those were the times")
-- Surprised   → unexpected news, shock ("I can't believe it", "no way!", "I didn't expect that")
-"""
 
 @app.post("/analyze")
 async def analyze(file: UploadFile):
     try:
         contents = await file.read()
 
+        # Step 1: Transcribe
         async with httpx.AsyncClient(timeout=30) as client:
             transcription_res = await client.post(
                 "https://api.groq.com/openai/v1/audio/transcriptions",
@@ -82,6 +97,20 @@ async def analyze(file: UploadFile):
                 raise Exception(f"Whisper error: {transcription_res.text}")
             transcription = transcription_res.text.strip()
 
+        t_lower = transcription.lower()
+
+        # Step 2: Keyword pre-check — never trust LLM for obvious cases
+        for emotion, keywords in KEYWORD_RULES:
+            if any(kw in t_lower for kw in keywords):
+                feedback = await get_ai_feedback(transcription, emotion)
+                return {
+                    "emotion": emotion,
+                    "confidence": 0.95,
+                    "transcription": transcription,
+                    "feedback": feedback,
+                }
+
+        # Step 3: LLM classification for everything else
         async with httpx.AsyncClient(timeout=30) as client:
             emotion_res = await client.post(
                 "https://api.groq.com/openai/v1/chat/completions",
@@ -96,17 +125,30 @@ async def analyze(file: UploadFile):
                         {
                             "role": "system",
                             "content": (
-                                "You are a precise emotion classifier. Analyze the spoken text and pick the SINGLE most accurate emotion.\n\n"
+                                "You are a precise emotion classifier. Pick the SINGLE most accurate emotion.\n\n"
                                 "ALLOWED EMOTIONS: " + EMOTIONS + "\n\n"
-                                + NUANCES +
-                                "\nAlso write 1-2 sentences of warm, specific, human feedback that responds directly to what they said — not generic.\n"
-                                "Reply ONLY with valid JSON, no markdown, no extra text.\n"
-                                'Example: {"emotion": "Frustrated", "confidence": 0.87, "feedback": "Sounds like this has been going wrong for a while — that wears you down."}'
+                                "RULES:\n"
+                                "- Neutral = absolute last resort. If any emotion fits even slightly, use it.\n"
+                                "- Depressed = ONLY hopeless/empty/meaningless speech. Never tiredness.\n"
+                                "- Frustrated = mild-to-medium irritation at obstacles. Angry = escalated rage.\n"
+                                "- Excited = high-energy. Happy = calm contentment.\n"
+                                "- Heartbroken = deep romantic/grief loss. Sad = general unhappiness.\n"
+                                "- Loving = affection for a person. Grateful = thankfulness.\n\n"
+                                "FEW-SHOT EXAMPLES:\n"
+                                '{"input": "I\'m so happy today!", "emotion": "Happy"}\n'
+                                '{"input": "I can\'t believe they did that to me", "emotion": "Angry"}\n'
+                                '{"input": "I keep messing this up, why won\'t it work", "emotion": "Frustrated"}\n'
+                                '{"input": "She left me and I don\'t know what to do", "emotion": "Heartbroken"}\n'
+                                '{"input": "I\'m so nervous about the interview tomorrow", "emotion": "Anxious"}\n'
+                                '{"input": "I just finished the project, thank god", "emotion": "Relieved"}\n\n'
+                                "Also write 1-2 sentences of warm specific feedback responding to their exact words.\n"
+                                "Reply ONLY with valid JSON.\n"
+                                'Example: {"emotion": "Anxious", "confidence": 0.88, "feedback": "That interview pressure is real — trust your prep."}'
                             ),
                         },
                         {
                             "role": "user",
-                            "content": f'Classify this spoken text: "{transcription}"',
+                            "content": f'Classify: "{transcription}"',
                         },
                     ],
                 },
