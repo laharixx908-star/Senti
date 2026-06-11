@@ -1,8 +1,4 @@
 fastapi
 uvicorn
-numpy
-librosa
-scikit-learn
-joblib
-soundfile
+httpx
 python-multipart
