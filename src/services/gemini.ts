@@ -30,7 +30,8 @@ const feedbackMap: Record<string, string> = {
 
 export async function analyzeVoiceEmotion(blob: Blob): Promise<EmotionAnalysis> {
   const formData = new FormData();
-  formData.append("file", blob, "recording.webm");
+  // Always send as .wav — backend expects WAV (librosa readable)
+  formData.append("file", blob, "recording.wav");
 
   const res = await fetch(`${BACKEND_URL}/analyze`, {
     method: "POST",
