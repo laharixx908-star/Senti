@@ -68,6 +68,10 @@ export default function AudioRecorder({ onAnalysisComplete, onRecordingStart }: 
       setAudioUrl(null);
       setPlayProgress(0);
       setIsPlaying(false);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
       audioChunksRef.current = [];
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -122,6 +126,7 @@ export default function AudioRecorder({ onAnalysisComplete, onRecordingStart }: 
 
   const togglePlayback = () => {
     if (!audioUrl) return;
+    // Always create a fresh Audio object — never reuse a ref from a previous recording
     if (!audioRef.current) audioRef.current = new Audio(audioUrl);
     const audio = audioRef.current;
 
