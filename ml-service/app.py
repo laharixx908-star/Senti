@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import os, io, json, re, tempfile
+import os, json, re
 import httpx
 
 app = FastAPI()
@@ -19,12 +19,17 @@ def health():
 
 GROQ_API_KEY = os.environ["GROQ_API_KEY"]
 
+EMOTIONS = (
+    "Happy, Sad, Angry, Fearful, Disgusted, Surprised, Neutral, "
+    "Loving, Crying, Depressed, Anxious, Excited, Grateful, Lonely, "
+    "Confident, Embarrassed, Bored, Confused, Proud, Heartbroken"
+)
+
 @app.post("/analyze")
 async def analyze(file: UploadFile):
     try:
         contents = await file.read()
 
-        # Step 1: Transcribe with Whisper via Groq
         async with httpx.AsyncClient(timeout=30) as client:
             transcription_res = await client.post(
                 "https://api.groq.com/openai/v1/audio/transcriptions",
@@ -36,7 +41,6 @@ async def analyze(file: UploadFile):
                 raise Exception(f"Whisper error: {transcription_res.text}")
             transcription = transcription_res.text.strip()
 
-        # Step 2: Detect emotion with Llama via Groq
         async with httpx.AsyncClient(timeout=30) as client:
             emotion_res = await client.post(
                 "https://api.groq.com/openai/v1/chat/completions",
@@ -45,22 +49,28 @@ async def analyze(file: UploadFile):
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": "llama-3.1-8b-instant",
-                    "max_tokens": 100,
+                    "model": "llama-3.3-70b-versatile",
+                    "max_tokens": 120,
                     "messages": [
                         {
                             "role": "system",
                             "content": (
-                                "You are an emotion detector. Given a sentence, "
-                                "pick the single best emotion from this list ONLY: "
-                                "Angry, Disgusted, Fearful, Happy, Neutral, Sad, Surprised. "
+                                "You are a precise emotion detector that analyzes BOTH the words spoken AND the vocal delivery context. "
+                                "Pick the single most accurate emotion from this list ONLY: " + EMOTIONS + ". "
+                                "Important nuances:\n"
+                                "- If someone is crying while saying happy words, pick Crying over Happy.\n"
+                                "- If someone expresses love or affection, pick Loving.\n"
+                                "- If someone sounds drained or hopeless (not just sad), pick Depressed.\n"
+                                "- If someone sounds worried or nervous, pick Anxious.\n"
+                                "- Excited is high-energy positive, different from Happy which is calm positive.\n"
+                                "- Heartbroken is deep grief, more intense than Sad.\n"
                                 "Reply with ONLY valid JSON, no markdown, no explanation. "
-                                'Example: {"emotion": "Happy", "confidence": 0.91}'
+                                'Example: {"emotion": "Crying", "confidence": 0.88}'
                             ),
                         },
                         {
                             "role": "user",
-                            "content": f'Detect the emotion in this text: "{transcription}"',
+                            "content": f'Detect the emotion in this spoken text: "{transcription}"',
                         },
                     ],
                 },
