@@ -40,29 +40,25 @@ async function blobToWav(blob: Blob): Promise<Blob> {
   return new Blob([buffer], { type: "audio/wav" });
 }
 
-export default function AudioRecorder({
-  onAnalysisComplete,
-  onRecordingStart,
-}: AudioRecorderProps) {
+export default function AudioRecorder({ onAnalysisComplete, onRecordingStart }: AudioRecorderProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  // playProgress: 0–1 representing how far through playback we are
   const [playProgress, setPlayProgress] = useState(0);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const playProgressRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
-      if (playProgressRef.current) cancelAnimationFrame(playProgressRef.current);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, []);
 
@@ -71,6 +67,7 @@ export default function AudioRecorder({
       setError(null);
       setAudioUrl(null);
       setPlayProgress(0);
+      setIsPlaying(false);
       audioChunksRef.current = [];
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -82,25 +79,17 @@ export default function AudioRecorder({
 
       const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) audioChunksRef.current.push(event.data);
-      };
-
+      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
       mediaRecorder.onstop = async () => {
         const rawBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        const url = URL.createObjectURL(rawBlob);
-        setAudioUrl(url);
+        setAudioUrl(URL.createObjectURL(rawBlob));
         await handleAnalysis(rawBlob);
       };
-
       mediaRecorder.start();
       setIsRecording(true);
       onRecordingStart();
       setRecordingTime(0);
-      timerRef.current = window.setInterval(() => {
-        setRecordingTime((prev) => prev + 1);
-      }, 1000);
+      timerRef.current = window.setInterval(() => setRecordingTime((p) => p + 1), 1000);
     } catch (err) {
       console.error(err);
       setError("Microphone access denied.");
@@ -133,107 +122,90 @@ export default function AudioRecorder({
 
   const togglePlayback = () => {
     if (!audioUrl) return;
+    if (!audioRef.current) audioRef.current = new Audio(audioUrl);
+    const audio = audioRef.current;
 
     if (isPlaying) {
-      // Pause
-      audioRef.current?.pause();
+      audio.pause();
       setIsPlaying(false);
-      if (playProgressRef.current) cancelAnimationFrame(playProgressRef.current);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       return;
     }
 
-    // Play from beginning if ended, else resume
-    const audio = audioRef.current ?? new Audio(audioUrl);
-    audioRef.current = audio;
-
-    if (audio.ended) {
-      audio.currentTime = 0;
-      setPlayProgress(0);
-    }
+    if (audio.ended) { audio.currentTime = 0; setPlayProgress(0); }
 
     audio.onended = () => {
       setIsPlaying(false);
       setPlayProgress(1);
-      if (playProgressRef.current) cancelAnimationFrame(playProgressRef.current);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
 
     audio.play();
     setIsPlaying(true);
 
-    // Animate the SVG ring in real-time
     const tick = () => {
-      if (audio.duration && !audio.paused) {
-        setPlayProgress(audio.currentTime / audio.duration);
-        playProgressRef.current = requestAnimationFrame(tick);
-      }
+      if (audio.duration) setPlayProgress(audio.currentTime / audio.duration);
+      if (!audio.paused && !audio.ended) rafRef.current = requestAnimationFrame(tick);
     };
-    playProgressRef.current = requestAnimationFrame(tick);
+    rafRef.current = requestAnimationFrame(tick);
   };
 
-  const formatTime = (s: number) =>
-    `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+  const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
-  // SVG ring constants
-  const R = 52;           // radius of the progress ring (mic button is w-24 = 96px, so r = 48 + padding)
-  const CX = 60;          // center of SVG
-  const CY = 60;
-  const CIRCUMFERENCE = 2 * Math.PI * R;
-  const dashOffset = CIRCUMFERENCE * (1 - playProgress);
+  // Ring geometry — wraps tightly around the 96px (w-24) button
+  // Container is 112px, button is 96px, ring sits in the 8px gap on each side
+  const SIZE = 112;
+  const CX = SIZE / 2;
+  const CY = SIZE / 2;
+  const R = 52; // just outside the 48px button radius
+  const CIRC = 2 * Math.PI * R;
 
   return (
     <div className="flex flex-col items-center gap-6 p-8 rounded-3xl bg-[#151619] border border-[#2A2B2F] w-full max-w-md mx-auto">
-      <div className="text-white text-2xl font-mono">
-        {formatTime(recordingTime)}
-      </div>
+      <div className="text-white text-2xl font-mono">{formatTime(recordingTime)}</div>
 
-      {/* Mic button with SVG progress ring overlay */}
-      <div className="relative flex items-center justify-center" style={{ width: 120, height: 120 }}>
-        {/* Background ring track — always visible when audio exists */}
-        {audioUrl && !isRecording && (
-          <svg
-            width="120"
-            height="120"
-            className="absolute top-0 left-0 pointer-events-none"
-            style={{ transform: "rotate(-90deg)" }}
-          >
-            {/* Dim grey track */}
-            <circle
-              cx={CX}
-              cy={CY}
-              r={R}
-              fill="none"
-              stroke="#2A2B2F"
-              strokeWidth="3"
-            />
-            {/* Red animated progress arc */}
+      {/* Wrapper: SVG ring layered ON TOP of button via z-index */}
+      <div className="relative" style={{ width: SIZE, height: SIZE }}>
+        {/* Mic / Stop / Loading button — sits below the SVG ring */}
+        <button
+          onClick={isRecording ? stopRecording : startRecording}
+          disabled={isAnalyzing}
+          style={{ width: 96, height: 96, top: 8, left: 8 }}
+          className="absolute rounded-full bg-[#2A2B2F] flex items-center justify-center"
+        >
+          {isAnalyzing
+            ? <Loader2 className="animate-spin text-white" size={28} />
+            : isRecording
+            ? <Square className="text-white" size={28} />
+            : <Mic className="text-white" size={28} />}
+        </button>
+
+        {/* SVG ring — rendered ON TOP, pointer-events-none so clicks pass through */}
+        <svg
+          width={SIZE}
+          height={SIZE}
+          className="absolute top-0 left-0 pointer-events-none"
+          style={{ transform: "rotate(-90deg)" }} // start arc from 12 o'clock
+        >
+          {/* Grey track — always shown when audio ready */}
+          {audioUrl && !isRecording && (
+            <circle cx={CX} cy={CY} r={R} fill="none" stroke="#3A3B3F" strokeWidth="4" />
+          )}
+          {/* Red progress arc */}
+          {audioUrl && !isRecording && (
             <circle
               cx={CX}
               cy={CY}
               r={R}
               fill="none"
               stroke="#FF4444"
-              strokeWidth="3"
+              strokeWidth="4"
               strokeLinecap="round"
-              strokeDasharray={CIRCUMFERENCE}
-              strokeDashoffset={dashOffset}
-              style={{ transition: isPlaying ? "none" : "stroke-dashoffset 0.3s ease" }}
+              strokeDasharray={CIRC}
+              strokeDashoffset={CIRC * (1 - playProgress)}
             />
-          </svg>
-        )}
-
-        <button
-          onClick={isRecording ? stopRecording : startRecording}
-          disabled={isAnalyzing}
-          className="w-24 h-24 rounded-full bg-[#2A2B2F] flex items-center justify-center z-10"
-        >
-          {isAnalyzing ? (
-            <Loader2 className="animate-spin text-white" size={28} />
-          ) : isRecording ? (
-            <Square className="text-white" size={28} />
-          ) : (
-            <Mic className="text-white" size={28} />
           )}
-        </button>
+        </svg>
       </div>
 
       {error && (
@@ -242,21 +214,14 @@ export default function AudioRecorder({
         </div>
       )}
 
-      {/* Play / Pause button */}
       {audioUrl && !isRecording && !isAnalyzing && (
         <button
           onClick={togglePlayback}
           className="text-white flex items-center gap-2 text-sm hover:text-[#FF4444] transition-colors"
         >
-          {isPlaying ? (
-            <>
-              <Pause size={16} fill="currentColor" /> Pause Recording
-            </>
-          ) : (
-            <>
-              <Play size={16} fill="currentColor" /> Play Recording
-            </>
-          )}
+          {isPlaying
+            ? <><Pause size={16} fill="currentColor" /> Pause Recording</>
+            : <><Play size={16} fill="currentColor" /> Play Recording</>}
         </button>
       )}
     </div>
