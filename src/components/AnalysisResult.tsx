@@ -252,9 +252,11 @@ export default function AnalysisResult({ analysis }: AnalysisResultProps) {
       </div>
 
       {/* Feedback */}
-      <div className="p-4 rounded-2xl bg-[#2A2B2F]/50 border border-[#2A2B2F] z-10">
-        <p className="text-sm text-[#8E9299] leading-relaxed italic">"{analysis.feedback}"</p>
-      </div>
+      {analysis.feedback && (
+        <div className="p-4 rounded-2xl bg-[#2A2B2F]/50 border border-[#2A2B2F] z-10">
+          <p className="text-sm text-[#8E9299] leading-relaxed italic">"{analysis.feedback}"</p>
+        </div>
+      )}
 
       <div className="w-full h-px bg-[#2A2B2F] z-10" />
 
