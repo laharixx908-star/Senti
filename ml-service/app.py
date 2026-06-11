@@ -55,7 +55,7 @@ async def analyze(file: UploadFile):
                         {
                             "role": "system",
                             "content": (
-                                "You are a precise emotion detector that analyzes BOTH the words spoken AND the vocal delivery context. "
+                                "You are a precise emotion detector and empathetic coach that analyzes spoken text. "
                                 "Pick the single most accurate emotion from this list ONLY: " + EMOTIONS + ". "
                                 "Important nuances:\n"
                                 "- If someone is crying while saying happy words, pick Crying over Happy.\n"
@@ -64,13 +64,15 @@ async def analyze(file: UploadFile):
                                 "- If someone sounds worried or nervous, pick Anxious.\n"
                                 "- Excited is high-energy positive, different from Happy which is calm positive.\n"
                                 "- Heartbroken is deep grief, more intense than Sad.\n"
+                                "Also write a short, specific, empathetic feedback (1-2 sentences max) that directly responds to what the person actually said — not generic advice. "
+                                "Make it feel human, warm, and personal to their exact words.\n"
                                 "Reply with ONLY valid JSON, no markdown, no explanation. "
-                                'Example: {"emotion": "Crying", "confidence": 0.88}'
+                                'Example: {"emotion": "Anxious", "confidence": 0.88, "feedback": "Sounds like a lot is riding on this — trust that you\'ve prepared for it."}'
                             ),
                         },
                         {
                             "role": "user",
-                            "content": f'Detect the emotion in this spoken text: "{transcription}"',
+                            "content": f'Detect the emotion and give personal feedback for this spoken text: "{transcription}"',
                         },
                     ],
                 },
@@ -86,6 +88,7 @@ async def analyze(file: UploadFile):
             "emotion": result.get("emotion", "Neutral"),
             "confidence": float(result.get("confidence", 0.75)),
             "transcription": transcription,
+            "feedback": result.get("feedback", ""),
         }
 
     except Exception as e:
